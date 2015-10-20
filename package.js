@@ -1,8 +1,8 @@
 Package.describe({
-    name         : 'okland:accounts-phone',
+    name         : 'weihai:accounts-phone',
     version      : '0.0.21',
     // Brief, one-line summary of the package.
-    summary      : 'A login service based on mobile phone number, For Meteor.',
+    summary      : 'A login service based on mobile phone number, forded from oakland.',
     // URL to the Git repository containing the source code for this package.
     git          : 'https://github.com/okland/accounts-phone',
     // By default, Meteor will default to using README.md for documentation.
@@ -40,7 +40,7 @@ Package.onUse(function (api) {
 });
 
 Package.onTest(function (api) {
-    api.use(['okland:accounts-phone', 'tinytest', 'test-helpers', 'tracker',
+    api.use(['weihai:accounts-phone', 'tinytest', 'test-helpers', 'tracker',
         'accounts-base', 'random', 'underscore', 'check',
         'ddp']);
     api.addFiles('phone_tests_setup.js', 'server');
