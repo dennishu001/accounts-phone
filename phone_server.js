@@ -104,6 +104,9 @@ var selectorFromUserQuery = function (user) {
         return {_id: user.id};
     else if (user.phone)
         return {'phone.number': normalizePhone(user.phone)}; // phone need to be normalized
+    else if (user.email)
+        return {'emails.address': user.email}; // add email address
+
     throw new Error("shouldn't happen (validation missed something)");
 };
 
@@ -126,7 +129,9 @@ var NonEmptyString = Match.Where(function (x) {
 var userQueryValidator = Match.Where(function (user) {
     check(user, {
         id   : Match.Optional(NonEmptyString),
-        phone: Match.Optional(NonEmptyString)
+        phone: Match.Optional(NonEmptyString),
+        // add email
+        email: Match.Optional(NonEmptyString)
     });
     if (_.keys(user).length !== 1)
         throw new Match.Error("User property must have exactly one field");
@@ -495,6 +500,11 @@ Meteor.methods({verifyPhone: function (phone, code, newPassword) {
 /// CREATING USERS
 ///
 
+// XXXX
+// We add in email address as idendifier as well. We keep the password
+// in 'services.phone' even if phone number is not provided to minimize
+// the change need to be made to this package.
+
 // Shared createUser function called from the createUser method, both
 // if originates in client or server code. Calls user provided hooks,
 // does the actual user insertion.
@@ -505,18 +515,21 @@ var createUser = function (options) {
     // options.
     check(options, Match.ObjectIncluding({
         phone   : Match.Optional(String),
+        email   : Match.Optional(String), // we are not validating it here as we will do it in schema anyway
         password: Match.Optional(passwordValidator)
     }));
 
-    var phone = options.phone;
-    if (!phone)
-        throw new Meteor.Error(400, "Need to set phone");
+    var phone = options.phone,
+        email = options.email;
+    if (!phone && !email)
+        throw new Meteor.Error(400, "Need at least phone or email");
 
-    var existingUser = Meteor.users.findOne(
-        {'phone.number': phone});
+    var existingUser = phone ? Meteor.users.findOne(
+        {'phone.number': phone}) : Meteor.users.findOne(
+        {'emails.address': email});
 
     if (existingUser) {
-        throw new Meteor.Error(403, "User with this phone number already exists");
+        throw new Meteor.Error(403, "User already exists");
     }
 
     var user = {services: {}};
@@ -525,7 +538,10 @@ var createUser = function (options) {
         user.services.phone = { bcrypt: hashed };
     }
 
-    user.phone = {number: phone, verified: false};
+    if (phone)
+        user.phone = {number: phone, verified: false};
+    if (email)
+        user.emails = [{address: email, verified: false}];
 
     try {
         return Accounts.insertUserDoc(options, user);
@@ -536,9 +552,11 @@ var createUser = function (options) {
         if (e.name !== 'MongoError') throw e;
         var match = e.err.match(/E11000 duplicate key error index: ([^ ]+)/);
         if (!match) throw e;
-        if (match[1].indexOf('users.$phone.number') !== -1)
-            throw new Meteor.Error(403, "Phone number already exists, failed on creation.");
-        throw e;
+        //if (match[1].indexOf('users.$phone.number') !== -1)
+        //    throw new Meteor.Error(403, "Phone number already exists, failed on creation.");
+        // We will let the client to figure out what field is duplicated
+        throw new Meteor.Error(403, "idendifier already exists");
+        //throw e;
     }
 };
 
