@@ -6,7 +6,8 @@ var AccountGlobalConfigs = {
     verificationCodeLength             : 4,
     verificationMaxRetries             : 2,
     forbidClientAccountCreation        : false,
-    sendPhoneVerificationCodeOnCreation: true
+    sendPhoneVerificationCodeOnCreation: true,
+    defaultPhoneCountryCode            : "CHN", 
 };
 
 _.defaults(Accounts._options, AccountGlobalConfigs);
@@ -102,7 +103,7 @@ var selectorFromUserQuery = function (user) {
     if (user.id)
         return {_id: user.id};
     else if (user.phone)
-        return {'phone.number': user.phone};
+        return {'phone.number': normalizePhone(user.phone)}; // phone need to be normalized
     throw new Error("shouldn't happen (validation missed something)");
 };
 
@@ -673,7 +674,7 @@ var normalizePhone = function (phone) {
     if (phone && Accounts._options.adminPhoneNumbers && Accounts._options.adminPhoneNumbers.indexOf(phone) != -1) {
         return phone;
     }
-    return Phone(phone)[0];
+    return Phone(phone, Accounts._options.defaultPhoneCountryCode)[0];
 };
 
 /**
