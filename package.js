@@ -2,7 +2,7 @@ Package.describe({
     name         : 'weihai:accounts-phone',
     version      : '0.0.21',
     // Brief, one-line summary of the package.
-    summary      : 'A login service based on mobile phone number, forded from oakland.',
+    summary      : 'A login service based on mobile phone number, forked from oakland.',
     // URL to the Git repository containing the source code for this package.
     git          : 'https://github.com/okland/accounts-phone',
     // By default, Meteor will default to using README.md for documentation.
@@ -20,8 +20,11 @@ Package.onUse(function (api) {
     api.use('npm-bcrypt@=0.7.8_2', 'server');
 
     api.use('accounts-base@1.0.2', ['client', 'server']);
+    // enable emails
+    api.use('accounts-password@1.1.1');
     // Export Accounts (etc) to packages using this one.
     api.imply('accounts-base@1.0.2', ['client', 'server']);
+    
     api.use('srp@1.0.2', ['client', 'server']);
     api.use('sha@1.0.2', ['client', 'server']);
     api.use('email@1.0.5', ['server']);
