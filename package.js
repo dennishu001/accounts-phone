@@ -4,7 +4,7 @@ Package.describe({
     // Brief, one-line summary of the package.
     summary      : 'A login service based on mobile phone number, forked from oakland.',
     // URL to the Git repository containing the source code for this package.
-    git          : 'https://github.com/okland/accounts-phone',
+    git          : 'https://github.com/dennishu001/accounts-phone.git',
     // By default, Meteor will default to using README.md for documentation.
     // To avoid submitting documentation, set this field to null.
     documentation: null
@@ -21,7 +21,7 @@ Package.onUse(function (api) {
 
     api.use('accounts-base@1.0.2', ['client', 'server']);
     // enable emails
-    api.use('accounts-password@1.1.1');
+    //api.use('accounts-password@1.1.1');
     // Export Accounts (etc) to packages using this one.
     api.imply('accounts-base@1.0.2', ['client', 'server']);
     
