@@ -544,6 +544,7 @@ var createUser = function (options) {
         user.emails = [{address: email, verified: false}];
 
     // Add profile.name to user
+    // XXX Do this as a hook instead of here?
     if (options.profile) {
         user.profile = {name: options.profile.name};
     }
