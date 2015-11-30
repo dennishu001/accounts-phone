@@ -543,7 +543,14 @@ var createUser = function (options) {
     if (email)
         user.emails = [{address: email, verified: false}];
 
+    // Add profile.name to user
+    if (options.profile) {
+        user.profile = {name: options.profile.name};
+    }
+
+
     try {
+        console.log(options);
         return Accounts.insertUserDoc(options, user);
     } catch (e) {
 
