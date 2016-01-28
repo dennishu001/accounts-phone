@@ -1,5 +1,7 @@
 var Future = Npm.require('fibers/future');
 var Twilio = Npm.require('twilio');
+var AliDaYu = Npm.require('alidayu-node');
+
 
 SMS = {};
 SMSTest = {};
@@ -76,7 +78,31 @@ SMS.send = function (options) {
         });
 
         return result;
-    } else {
+    } 
+    else if (Meteor.settings.sms === 'dayu') {
+        //var key = Meteor.settings.alidayu_key;
+        //var secret = Meteor.settings.alidayu_secret;
+        // hardcoded
+        var app = new AliDaYu('23304554', '7007b526fbb9936d80758b8b0ac1a871');
+        var params = {
+            sms_free_sign_name: '身份验证',
+            rec_num: options.to.replace(/^\+86/, ''), // dayu only accepts local phone number
+            sms_template_code: 'SMS_4980890', //SMS.dayuTemplates[options.action],
+            sms_param: { code: options.code, product: '伟海精英' }
+        };
+        //console.log('params', params);   
+        var sendSMSSync = Meteor.wrapAsync(app.smsSend, app);
+        var result = sendSMSSync(params, function (res) {
+            //console.log('res:', res);
+            if (res.error_response) {
+                throw new Meteor.Error('Error sending SMS', res.error_response);
+            }
+            return res;
+        });
+        //console.log('res:', result);
+        return result;
+    }
+    else {
         devModeSend(options);
     }
 };
@@ -88,3 +114,13 @@ SMS.phoneTemplates = {
     }
 };
 
+///
+/// alidayu
+///
+
+// template lookup
+SMS.dayuTemplates = {
+    create: 'SMS_4980887',
+    reset: 'SMS_4980885',
+    identify: 'SMS_4980890'
+};

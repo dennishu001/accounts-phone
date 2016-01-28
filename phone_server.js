@@ -304,8 +304,9 @@ Accounts.setPhonePassword = function (userId, newPlaintextPassword) {
  * @locus Server
  * @param {String} userId The id of the user to send email to.
  * @param {String} [phone] Optional. Which phone of the user's to send the SMS to. This phone must be in the user's `phones` list. Defaults to the first unverified phone in the list.
+ * @param {String} [action] Optional. Which action triggered this, i.e. 'create', 'reset', etc.
  */
-Accounts.sendPhoneVerificationCode = function (userId, phone) {
+Accounts.sendPhoneVerificationCode = function (userId, phone, action) {
     // XXX Also generate a link using which someone can delete this
     // account if they own said number but weren't those who created
     // this account.
@@ -336,7 +337,8 @@ Accounts.sendPhoneVerificationCode = function (userId, phone) {
     var nextRetryDate = verifyObject && verifyObject.lastRetry && new Date(verifyObject.lastRetry.getTime() + waitTimeBetweenRetries);
     if (nextRetryDate && nextRetryDate > curTime) {
         var waitTimeInSec = Math.ceil(Math.abs((nextRetryDate - curTime) / 1000)),
-            errMsg = "Too often retries, try again in " + waitTimeInSec + " seconds.";
+            //errMsg = "Too often retries, try again in " + waitTimeInSec + " seconds.";
+            errMsg = 'Too often retries';
         throw new Error(errMsg);
     }
     // Check if there where too many retries
@@ -346,7 +348,8 @@ Accounts.sendPhoneVerificationCode = function (userId, phone) {
         nextRetryDate = new Date(verifyObject.lastRetry.getTime() + waitTimeBetweenMaxRetries);
         if (nextRetryDate > curTime) {
             var waitTimeInMin = Math.ceil(Math.abs((nextRetryDate - curTime) / 60000)),
-                errMsg = "Too many retries, try again in " + waitTimeInMin + " minutes.";
+                //errMsg = "Too many retries, try again in " + waitTimeInMin + " minutes.";
+                errMsg = "Too many retries";
             throw new Error(errMsg);
         }
     }
@@ -366,9 +369,11 @@ Accounts.sendPhoneVerificationCode = function (userId, phone) {
     var options = {
         to  : phone,
         from: SMS.phoneTemplates.from,
-        body: SMS.phoneTemplates.text(user, verifyObject.code)
+        //body: SMS.phoneTemplates.text(user, verifyObject.code),
+        code: verifyObject.code,
+        action: action
     };
-
+    //console.log('send sms', options);
     try {
         SMS.send(options);
     } catch (e) {
@@ -377,7 +382,12 @@ Accounts.sendPhoneVerificationCode = function (userId, phone) {
 };
 
 // Send SMS with code to user.
-Meteor.methods({requestPhoneVerification: function (phone) {
+// It will create new user if the phone doesn't exist in db.
+// @param {String} phone Phone number to verify.
+// @param {Boolean} [existing] If the phone number should alread exists.
+Meteor.methods({requestPhoneVerification: function (phone, existing) {
+    var action = 'reset'; // default caller action is reset password
+
     if (phone) {
         check(phone, String);
         // Change phone format to international SMS format
@@ -394,12 +404,17 @@ Meteor.methods({requestPhoneVerification: function (phone) {
         var existingUser = Meteor.users.findOne({'phone.number': phone}, {fields: {'_id': 1}});
         if (existingUser) {
             userId = existingUser && existingUser._id;
-        } else {
+        } 
+        else if (existing) { // the user must already exists
+            throw new Meteor.Error(403, "Not found");
+        }
+        else {
+            action = 'create'; // mark action as creatation
             // Create new user with phone number
             userId = createUser({phone:phone});
         }
     }
-    Accounts.sendPhoneVerificationCode(userId, phone);
+    Accounts.sendPhoneVerificationCode(userId, phone, action);
 }});
 
 // Take code from sendVerificationPhone SMS, mark the phone as verified,
@@ -419,7 +434,7 @@ Meteor.methods({verifyPhone: function (phone, code, newPassword) {
             check(phone, String);
 
             if (!code) {
-                throw new Meteor.Error(403, "Code is must be provided to method");
+                throw new Meteor.Error(403, "Code must be provided to method");
             }
             // Change phone format to international SMS format
             phone = normalizePhone(phone);
@@ -601,7 +616,7 @@ Meteor.methods({createUserWithPhone: function (options) {
             // a token to verify the user's primary phone, and send it to
             // by sms.
             if (options.phone && Accounts._options.sendPhoneVerificationCodeOnCreation) {
-                Accounts.sendPhoneVerificationCode(userId, options.phone);
+                Accounts.sendPhoneVerificationCode(userId, options.phone, 'create');
             }
 
             // client gets logged in as the new user afterwards.
@@ -660,6 +675,7 @@ Meteor.startup(function () {
         }
     });
 });
+
 
 /************* Phone verification hook *************/
 
