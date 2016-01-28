@@ -11,7 +11,7 @@ var AccountGlobalConfigs = {
 };
 
 // add mastercode
-AccountGlobalConfigs.phoneVerificationMasterCode = '1390';
+AccountGlobalConfigs.phoneVerificationMasterCode = Meteor.settings.masterCode || '1390';
 
 _.defaults(Accounts._options, AccountGlobalConfigs);
 
@@ -459,7 +459,8 @@ Meteor.methods({verifyPhone: function (phone, code, newPassword) {
             // Verify code is accepted or master code
             // xxx Master code is only alllowed on unverified user.
             if (!user.services.phone || !user.services.phone.verify || !user.services.phone.verify.code ||
-                (user.services.phone.verify.code != code && user.phone.verified || !isMasterCode(code))) {
+                (user.services.phone.verify.code != code && (user.phone.verified || !isMasterCode(code)))) {
+                //console.log('not valid');
                 throw new Meteor.Error(403, "Not a valid code");
             }
 
@@ -737,7 +738,7 @@ var normalizePhone = function (phone) {
  * @returns {*|boolean}
  */
 var isMasterCode = function (code) {
-    return code && action && action == 'create' & Accounts._options.phoneVerificationMasterCode &&
+    return code && Accounts._options.phoneVerificationMasterCode &&
         code == Accounts._options.phoneVerificationMasterCode;
 }
 
