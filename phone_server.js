@@ -201,13 +201,25 @@ Accounts.registerLoginHandler("phone", function (options) {
         }
     }
 
-    // Housekeeping: removing old login tokens. This can be done any where.
+    // Housekeeping. Can be done any where.
     // Alternatively, we can setup a crop job to do this.
-    Meteor.users.update(user._id, { $pull: {
+
+    var updater = {};
+
+    // get exiting profile id
+    var profile = Profiles.findOne({userId: user._id}, { fields: {_id: 1} });
+    //console.log('profile', profile);
+    if (profile && user.profileId !== profile._id)
+        updater.$set = { profileId: profile._id };
+
+    // remove old login tokens
+    updater.$pull = {
         'services.resume.loginTokens': {
             when: { $lt: moment().subtract(1, 'days').toDate() }
         }
-    }});
+    };
+    //console.log('updater', updater);
+    Meteor.users.update(user._id, updater);
 
     return checkPassword(
         user,
