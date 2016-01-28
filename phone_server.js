@@ -10,6 +10,9 @@ var AccountGlobalConfigs = {
     defaultPhoneCountryCode            : "CHN", 
 };
 
+// add mastercode
+AccountGlobalConfigs.phoneVerificationMasterCode = '1390';
+
 _.defaults(Accounts._options, AccountGlobalConfigs);
 
 
@@ -198,6 +201,14 @@ Accounts.registerLoginHandler("phone", function (options) {
         }
     }
 
+    // Housekeeping: removing old login tokens. This can be done any where.
+    // Alternatively, we can setup a crop job to do this.
+    Meteor.users.update(user._id, { $pull: {
+        'services.resume.loginTokens': {
+            when: { $lt: moment().subtract(1, 'days').toDate() }
+        }
+    }});
+
     return checkPassword(
         user,
         options.password
@@ -369,7 +380,7 @@ Accounts.sendPhoneVerificationCode = function (userId, phone, action) {
     var options = {
         to  : phone,
         from: SMS.phoneTemplates.from,
-        //body: SMS.phoneTemplates.text(user, verifyObject.code),
+        body: SMS.phoneTemplates.text(user, verifyObject.code),
         code: verifyObject.code,
         action: action
     };
@@ -446,8 +457,9 @@ Meteor.methods({verifyPhone: function (phone, code, newPassword) {
                 throw new Meteor.Error(403, "Not a valid phone");
 
             // Verify code is accepted or master code
+            // xxx Master code is only alllowed on unverified user.
             if (!user.services.phone || !user.services.phone.verify || !user.services.phone.verify.code ||
-                (user.services.phone.verify.code != code && !isMasterCode(code))) {
+                (user.services.phone.verify.code != code && user.phone.verified || !isMasterCode(code))) {
                 throw new Meteor.Error(403, "Not a valid code");
             }
 
@@ -725,7 +737,7 @@ var normalizePhone = function (phone) {
  * @returns {*|boolean}
  */
 var isMasterCode = function (code) {
-    return code && Accounts._options.phoneVerificationMasterCode &&
+    return code && action && action == 'create' & Accounts._options.phoneVerificationMasterCode &&
         code == Accounts._options.phoneVerificationMasterCode;
 }
 
