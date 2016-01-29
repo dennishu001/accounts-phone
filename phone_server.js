@@ -201,7 +201,7 @@ Accounts.registerLoginHandler("phone", function (options) {
         }
     }
 
-    // Housekeeping. Can be done any where.
+    // Housekeeping. Quick fix. These should be put into a login hook.
     // Alternatively, we can setup a crop job to do this.
 
     var updater = {};
