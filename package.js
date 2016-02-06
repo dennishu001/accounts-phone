@@ -12,8 +12,8 @@ Package.describe({
 
 Npm.depends({
     "phone"         : "1.0.3",
-    "twilio"        : "1.10.0",
-    "alidayu-node-sdk"  : "1.0.2", // alidayu
+    //"twilio"        : "1.10.0",
+    //"alidayu-node-sdk"  : "1.0.2", // alidayu
     "alidayu-node": "1.0.3", 
     "stream-buffers": "0.2.5"
 });
